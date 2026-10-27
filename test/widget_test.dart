@@ -1,30 +1,45 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:demo_stream/app.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:demo_stream/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Bắt đầu, tạm dừng, tiếp tục và đặt lại', (tester) async {
+    await tester.pumpWidget(const DemoApp());
+    await tester.tap(find.text('Mở đồng hồ bấm giờ'));
+    await tester.pumpAndSettle();
+    expect(find.text('00:00.0'), findsOneWidget);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.tap(find.text('Bắt đầu'));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('00:01.0'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.text('Tạm dừng'));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('00:01.0'), findsOneWidget);
+    expect(find.text('Tiếp tục'), findsOneWidget);
+
+    await tester.tap(find.text('Tiếp tục'));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('00:01.5'), findsOneWidget);
+
+    await tester.tap(find.text('Tạm dừng'));
     await tester.pump();
+    await tester.tap(find.text('Đặt lại'));
+    await tester.pump();
+    expect(find.text('00:00.0'), findsOneWidget);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  // flutter_test tự báo lỗi nếu còn Timer chạy khi test kết thúc,
+  // nên test này kiểm chứng dispose() đã hủy Timer và đóng Stream.
+  testWidgets('Thoát màn hình khi đang chạy không để lại Timer', (tester) async {
+    await tester.pumpWidget(const DemoApp());
+    await tester.tap(find.text('Mở đồng hồ bấm giờ'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Bắt đầu'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Mở đồng hồ bấm giờ'), findsOneWidget);
   });
 }
